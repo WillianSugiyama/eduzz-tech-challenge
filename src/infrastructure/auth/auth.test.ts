@@ -16,11 +16,11 @@ describe('Auth', () => {
 
       // Assert
       expect(tokenData).toBeDefined();
-      expect(tokenData.expiresIn).toBe(FIFTEEN_MINUTES_IN_MS);
-      expect(tokenData.token).toBeDefined();
+      expect(tokenData.message.expiresIn).toBe(FIFTEEN_MINUTES_IN_MS);
+      expect(tokenData.message.token).toBeDefined();
 
       // Verify the token using the same secret
-      const decodedToken = jwt.verify(tokenData.token, 'secret');
+      const decodedToken = jwt.verify(tokenData.message.token, 'secret');
       expect(decodedToken).toEqual({ id: user.id, iat: Math.floor(ACTUAL_TIME_IN_SECONDS), exp: Math.floor(getActualTimeInSeconds()) });
     });
   });
