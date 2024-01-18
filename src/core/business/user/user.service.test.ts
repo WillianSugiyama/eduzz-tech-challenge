@@ -91,13 +91,15 @@ describe('UserService', () => {
         id: 'userId',
         password: 'hashedPassword',
       };
+
+      authService.createToken = jest.fn().mockResolvedValue('token');
       userRepository.findByEmail = jest.fn().mockResolvedValue(user);
 
       // Act
       const result = await userService.signIn(data);
 
       // Assert
-      expect(result).toBe(user.id);
+      expect(result).toBe('token');
     });
   });
 });

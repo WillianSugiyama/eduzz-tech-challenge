@@ -1,66 +1,111 @@
 import { Request, Response } from 'express';
-import { IUserService } from '../../domain/interfaces/user/user.service';
 import { UserController } from './user.controller';
+import { IUserService } from '../../domain/interfaces/user/user.service';
 
 describe('UserController', () => {
   let userController: UserController;
-  let userService: IUserService;
-  let request: Request;
-  let response: Response;
+  let mockUserService: IUserService;
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
 
   beforeEach(() => {
-    userService = {
+    mockUserService = {
       signUp: jest.fn(),
       signIn: jest.fn(),
     };
-    userController = new UserController(userService);
-    request = {} as Request;
-    response = {
+    userController = new UserController(mockUserService as IUserService);
+    mockRequest = {};
+    mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
-    } as unknown as Response;
+      send: jest.fn(),
+      setHeader: jest.fn(),
+    };
   });
 
   describe('signUp', () => {
-    it('should call userService.signUp and return 201 status code with result', async () => {
+    it('should return 201 status code and result when sign up is successful', async () => {
       // Arrange
-      const signUpData = {
+      const requestBody = {
         email: 'test@example.com',
-        password: 'password123',
+        password: 'password',
         name: 'John Doe',
       };
-      request.body = signUpData;
-      const expectedResult = { status: 201, message: 'User signed up successfully' };
-      userService.signUp = jest.fn().mockResolvedValue(expectedResult);
+      const expectedResult = 'success';
+      mockRequest.body = requestBody;
+      mockUserService.signUp = jest.fn().mockResolvedValue(expectedResult);
 
       // Act
-      await userController.signUp(request, response);
+      await userController.signUp(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(userService.signUp).toHaveBeenCalledWith(signUpData);
-      expect(response.status).toHaveBeenCalledWith(201);
-      expect(response.json).toHaveBeenCalledWith({ result: expectedResult });
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith({ result: expectedResult });
+    });
+
+    it('should return error message when sign up fails', async () => {
+      // Arrange
+      const requestBody = {
+        email: 'test@example.com',
+        password: 'password',
+        name: 'John Doe',
+      };
+      const errorMessage = 'Invalid email';
+      mockRequest.body = requestBody;
+      mockUserService.signUp = jest.fn().mockResolvedValue({ status: 400, message: errorMessage });
+
+      // Act
+      await userController.signUp(mockRequest as Request, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({ message: errorMessage });
     });
   });
 
   describe('signIn', () => {
-    it('should call userService.signIn and return 200 status code with result', async () => {
+    it('should return token and set cookie when sign in is successful', async () => {
       // Arrange
-      const signInData = {
+      const requestBody = {
         email: 'test@example.com',
-        password: 'password123',
+        password: 'password',
       };
-      request.body = signInData;
-      const expectedResult = { status: 200, message: 'User signed in successfully' };
-      userService.signIn = jest.fn().mockResolvedValue(expectedResult);
+      const tokenData = {
+        token: 'token',
+        expiresIn: 3600,
+      };
+      mockRequest.body = requestBody;
+      mockUserService.signIn = jest.fn().mockResolvedValue({ status: 200, message: tokenData });
 
       // Act
-      await userController.signIn(request, response);
+      await userController.signIn(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(userService.signIn).toHaveBeenCalledWith(signInData);
-      expect(response.status).toHaveBeenCalledWith(200);
-      expect(response.json).toHaveBeenCalledWith({ result: expectedResult });
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('Set-Cookie', [
+        `Authorization=${tokenData.token}; HttpOnly; Max-Age=${tokenData.expiresIn}`,
+      ]);
+      expect(mockResponse.send).toHaveBeenCalledWith({ result: {
+        message: tokenData,
+        status: 200
+      } });
+    });
+
+    it('should return error message when sign in fails', async () => {
+      // Arrange
+      const requestBody = {
+        email: 'test@example.com',
+        password: 'password',
+      };
+      const errorMessage = 'Invalid credentials';
+      mockRequest.body = requestBody;
+      mockUserService.signIn = jest.fn().mockResolvedValue({ status: 401, message: errorMessage });
+
+      // Act
+      await userController.signIn(mockRequest as Request, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({ message: errorMessage });
     });
   });
 });

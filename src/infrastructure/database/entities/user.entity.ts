@@ -1,5 +1,6 @@
-import { BeforeInsert, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { BeforeInsert, Column, CreateDateColumn, Entity, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { hashText } from "../../../utils/hash";
+import { BalanceModel } from "./balance.entity";
 
 export interface IUserModel {
   id?: string;
@@ -29,6 +30,9 @@ export class UserModel {
 
   @UpdateDateColumn()
   updatedAt?: Date;
+
+  @OneToOne(() => BalanceModel, balance => balance.user)
+  balance: BalanceModel;
 
   @BeforeInsert()
   emailToLowerCase() {
